@@ -11,6 +11,3 @@ maze_im = Image.open(image_file)
 maze_data = np.reshape(maze_im.getdata(), maze_im.size)
 qet = maze_im.convert('RGB')
 im = ImageDraw.Draw(qet)
-
-
-#check the image

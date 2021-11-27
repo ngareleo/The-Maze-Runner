@@ -1,10 +1,11 @@
-from PIL import Image, ImageDraw
-import numpy as np
+import copy
+from MazeVisual import Visualize as Vs
+from setup import *
 from sys import setrecursionlimit
 
 setrecursionlimit(1000000000)
 
-image = "./Mazes/perfect2k_2.png"
+image = "./Mazes/normal.png"
 
 ans = []
 recursion_count = 0
@@ -13,22 +14,32 @@ all_arrays = []
 
 class Node:
 
-    def __init__(self, maze, sp, ep, mother=None):  # sp start point , ep -> end point
+    def __init__(self, maze, sp, ep, mother=None, vis=None):  # sp start point , ep -> end point
         self.maze = maze
+        self.org = self.maze
         self.sp = sp
         self.cp = sp
         self.ep = ep
-        print(f"End point : {self.ep}")
-        self.check_maze()
         self.path = []
         self.child = []
         self.mother = mother
         self.finished = False
         self.dead_end = False
+        self.vis = vis
+        self.vis.viable_paths = self.path
+        self.vis.ep = self.ep
+        self.vis.sp = self.sp
+        self.vis.dead_paths = self.trace_origin()
         self.move()
 
-    def check_maze(self):
-        pass
+    def trace_origin(self):
+        origin = []
+        m = self.mother
+        while m:
+            for point in m.path:
+                origin.append(point)
+            m = m.mother
+        return origin
 
     def move_next(self):
         global recursion_count, all_arrays
@@ -57,7 +68,7 @@ class Node:
             self.path.append(self.cp)
             for i in range(n_children):
                 self.child.append(
-                    Node(self.maze, directions[i], mother=self, ep=self.ep)
+                    Node(self.maze, directions[i], mother=self, ep=self.ep, vis=self.vis)
                 )
             for point in self.path:
                 if len(point) != 0:
@@ -86,7 +97,9 @@ class Node:
             self.check_if_finished()
             self.move_next()
             self.print_cp()
-            print(self.path)
+            self.vis.render_board(v=1)
+            for row in self.org:
+                print(row)
 
     def print_cp(self):
         print(f"Cp : {self.cp}")
@@ -121,10 +134,11 @@ def paint_line(_image, _fill, points):
         _image.point([point[1], point[0]], fill=_fill)
 
 
+
+
 if __name__ == '__main__':
-    s = Node(maze_data, [0, find_one(maze_data[0])], [len(maze_data) - 1, find_one(maze_data[-1])])
-    print(ans)
-    print(all_arrays)
+    v = Vs(maze_data)
+    s = Node(maze_data, [0, find_one(maze_data[0])], [len(maze_data) - 1, find_one(maze_data[-1])], vis=v)
     paint_line(im, (0, 0, 225), ans)
     qet.save('./Results/sample_three.png')
 

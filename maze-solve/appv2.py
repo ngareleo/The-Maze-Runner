@@ -1,8 +1,16 @@
+import copy
+
 from setup import maze_data as md, im, qet
 from app import find_one, paint_line
 from args import args
 from os import mkdir
 from os import path, getcwd
+from MazeVisual import Visualize as Vs
+"""
+All the data we need to pass to the VS is the dead-paths
+The current paths, the maze information
+"""
+
 
 """
 Instead of recursion we are using one big loop and a large collection of arrays
@@ -23,10 +31,20 @@ class Node:
         self.maze_data = maze_data
         self.starting_point = starting_point
         self.end_point = end_point
-        self.save_point = f"\\{str(__file__).split('.')[0]}"
+        self.save_point = f"{str(__file__).split('.')[0]}"
         self.all_arrays = [[self.starting_point]]
         self.reached_final_point = False
         self.potentials = []
+        self.dead_paths = []
+        self.final_array = []
+        self.vis = Vs(md=copy.deepcopy(self.maze_data),
+                      dead_path=self.potentials,
+                      viable_paths=self.all_arrays,
+                      final_array=self.final_array,
+                      b=self.starting_point,
+                      e=self.end_point
+        )
+
         self.setup()
         self.start()
 
@@ -39,6 +57,7 @@ class Node:
     def start(self):
         while not self.reached_final_point:
             for array in self.all_arrays:
+                self.vis.render_board()
                 if self.move(array):
                     break
         print("#" * 30 + "Search complete" + "#" * 30 + "\n")
@@ -52,22 +71,22 @@ class Node:
 
     def trace_back(self):
         _offset, read_co = 0, 1
-        final_array = [self.potentials[-1]]
+        self.final_array = [self.potentials[-1]]
         print("Tracing Back\n\n")
-        while final_array[-1][0] != self.starting_point:
+        while self.final_array[-1][0] != self.starting_point:
             print(f"Path no : {_offset}")
             for i in range(read_co, len(self.potentials) + 1):
                 arr = self.potentials[-i]
-                print(f"Array[0] : {arr[-1]}\t, final_array[-1][-1] : {final_array[-1][0]}")
-                if arr[-1] == final_array[-1][0]:
+                print(f"Array[0] : {arr[-1]}\t, final_array[-1][-1] : {self.final_array[-1][0]}")
+                if arr[-1] == self.final_array[-1][0]:
                     print("#" * 30 + " Found " + "#" * 30)
-                    final_array.append(arr)
+                    self.final_array.append(arr)
             _offset += 1
 
         # flattening the final path
         final_path = []
-        for path in final_array:
-            for point in path:
+        for pth in self.final_array:
+            for point in pth:
                 final_path.append(point)
 
         print(f"Final path")
@@ -138,11 +157,12 @@ class Node:
             print(row)
 
     def save_solution(self):
-        if not path.exists(path.join(getcwd() + self.save_point)):
-            print(f"Creating new directory : {path.join(getcwd() + self.save_point)}")
-            mkdir(path.join(getcwd() + self.save_point))
+        print(f'Save point is : {self.save_point}')
+        if not path.exists(self.save_point):
+            print(f"Creating new directory : {self.save_point}")
+            mkdir(self.save_point)
         try:
-            qet.save(path.join(getcwd() + self.save_point + f"\\{args.Save}.png"))
+            qet.save(self.save_point + f"/{args.Save}.png")
             print("Image ready")
         except FileNotFoundError:
             print(f"Error occurred saving the file")
